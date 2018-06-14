@@ -2,9 +2,11 @@ package com.padcmyanmar.sfc.data.models;
 
 import android.arch.persistence.db.SimpleSQLiteQuery;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.padcmyanmar.sfc.SFCNewsApp;
 import com.padcmyanmar.sfc.data.persistence.AppDatabase;
 import com.padcmyanmar.sfc.data.persistence.queries.NewWithRelation;
@@ -16,7 +18,9 @@ import com.padcmyanmar.sfc.data.vo.NewsVO;
 import com.padcmyanmar.sfc.data.vo.PublicationVO;
 import com.padcmyanmar.sfc.data.vo.SentToVO;
 import com.padcmyanmar.sfc.events.RestApiEvents;
+import com.padcmyanmar.sfc.network.MMNewsAPI;
 import com.padcmyanmar.sfc.network.MMNewsDataAgentImpl;
+import com.padcmyanmar.sfc.network.reponses.GetNewsResponse;
 import com.padcmyanmar.sfc.utils.AppConstants;
 import com.padcmyanmar.sfc.utils.Apply;
 import com.padcmyanmar.sfc.utils.NewsFromDb;
@@ -25,9 +29,24 @@ import com.padcmyanmar.sfc.utils.RoomQuery;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.Scheduler;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
+import okhttp3.OkHttpClient;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
  * Created by aung on 12/3/17.
@@ -41,12 +60,33 @@ public class NewsModel {
     private int mmNewsPageIndex = 1;
     private AppDatabase mDb;
     private NewsFromDb mAllNews;
-    private RoomQuery<NewsVO> mSingleNew;
+    private MMNewsAPI theAPI;
+    private PublishSubject<List<NewsVO>> mSubject;
+
+    private void initAPI() {
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("http://padcmyanmar.com/padc-3/mm-news/apis/")
+                .addConverterFactory(GsonConverterFactory.create(new Gson()))
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                .client(okHttpClient)
+                .build();
+
+        theAPI = retrofit.create(MMNewsAPI.class);
+        mSubject = PublishSubject.create();
+
+    }
 
     private NewsModel() {
-        EventBus.getDefault().register(this);
+        //EventBus.getDefault().register(this);
         mNews = new ArrayList<>();
         mDb = AppDatabase.getInstance();
+        initAPI();
     }
 
     public static NewsModel getInstance() {
@@ -57,17 +97,51 @@ public class NewsModel {
     }
 
     public void startLoadingMMNews() {
-        MMNewsDataAgentImpl.getInstance().loadMMNews(AppConstants.ACCESS_TOKEN, mmNewsPageIndex);
-    }
+       // MMNewsDataAgentImpl.getInstance().loadMMNews(AppConstants.ACCESS_TOKEN, mmNewsPageIndex);
 
-//    public AllNewsQuery newsFromRoom(){
-//        if (mAllNews == null) mAllNews = new AllNewsQuery();
-//        return mAllNews;
-//    }
+        Observable<GetNewsResponse> newsResponseObservable = theAPI.loadMMNews(mmNewsPageIndex, AppConstants.ACCESS_TOKEN);
+        newsResponseObservable
+                .subscribeOn(Schedulers.io())
+                .map(new Function<GetNewsResponse, List<NewsVO>>() {
+                    @Override
+                    public List<NewsVO> apply(GetNewsResponse getNewsResponse) throws Exception {
+                        return getNewsResponse.getNewsList();
+                    }
+                })
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<List<NewsVO>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        mSubject.onSubscribe(d);
+                    }
+
+                    @Override
+                    public void onNext(List<NewsVO> newsVOS) {
+                        mSubject.onNext(newsVOS);
+                        mNews.addAll(newsVOS);
+                        mmNewsPageIndex++;
+//                        clearAll();
+//                        saveBulkData(newsVOS);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        mSubject.onError(e);
+                        Log.e("NewsModel", "onError: "+ e.getMessage() );
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        mSubject.onComplete();
+                        Log.d("NewsModel", "onComplete: ");
+                    }
+                });
+
+    }
 
     public NewsFromDb newsFromRoom() {
         if (mAllNews == null) {
-            mAllNews = new NewsFromDb(mDb);
+            mAllNews = new NewsFromDb();
         }
         return mAllNews;
     }
@@ -90,7 +164,7 @@ public class NewsModel {
         return newsVOS;
     }
 
-
+    /*
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onNewsDataLoaded(RestApiEvents.NewsDataLoadedEvent event) {
         mNews.addAll(event.getLoadNews());
@@ -98,6 +172,7 @@ public class NewsModel {
         clearAll();
         saveBulkData(event.getLoadNews());
     }
+    */
 
     private void clearAll() {
         mDb.actedUserDao().deleteAll();
@@ -149,35 +224,27 @@ public class NewsModel {
                     });
         });
 
-        Log.d(SFCNewsApp.LOG_TAG, "Publications : " + publicationList.size());
-        Log.d(SFCNewsApp.LOG_TAG, "News : " + newList.size());
-        Log.d(SFCNewsApp.LOG_TAG, "Images : " + imageList.size());
-        Log.d(SFCNewsApp.LOG_TAG, "Favorites : " + favoriteList);
-        Log.d(SFCNewsApp.LOG_TAG, "SentTo : " + sentToList.size());
-        Log.d(SFCNewsApp.LOG_TAG, "Comments : " + commentList.size());
-        Log.d(SFCNewsApp.LOG_TAG, "Users : " + userList.size());
 
         long[] publications = mDb.publicationDao().insertAll(publicationList.toArray(new PublicationVO[0]));
-        Log.d(SFCNewsApp.LOG_TAG, "publications : " + mDb.publicationDao().getAll().size());
+        Log.d("INSERTED", "publications : " + publications.length);
 
         long[] news = mDb.newsDao().insertAll(newList.toArray(new NewsVO[0]));
-        Log.d(SFCNewsApp.LOG_TAG, "news : " + mDb.newsDao().getAll().size());
+        Log.d("INSERTED", "news : " +news.length);
 
         long[] images = mDb.imagesInNewDao().insertAll(imageList.toArray(new ImagesInNewVO[0]));
-        Log.d(SFCNewsApp.LOG_TAG, "images : " + mDb.imagesInNewDao().getAll().size());
+        Log.d("INSERTED", "images : " + images.length);
 
         long[] actedUsers = mDb.actedUserDao().insertAll(userList.toArray(new ActedUserVO[0]));
-        Log.d(SFCNewsApp.LOG_TAG, "actedUsers : " + mDb.actedUserDao().getAll().size());
+        Log.d("INSERTED", "actedUsers : " + actedUsers.length);
 
         long[] favorites = mDb.favouriteActionDao().insertAll(favoriteList.toArray(new FavoriteActionVO[0]));
-        Log.d(SFCNewsApp.LOG_TAG, "favoritesRoom : " + mDb.favouriteActionDao().getAll());
+        Log.d("INSERTED", "favoritesRoom : " + favorites.length);
 
         long[] comments = mDb.commentActionDao().insertAll(commentList.toArray(new CommentActionVO[0]));
-        Log.d(SFCNewsApp.LOG_TAG, "comments : " + mDb.commentActionDao().getAll().size());
+        Log.d("INSERTED", "comments : " + comments.length);
 
         long[] sentTos = mDb.sentToDao().insertAll(sentToList.toArray(new SentToVO[0]));
-        Log.d(SFCNewsApp.LOG_TAG, "sentTos : " + mDb.sentToDao().getAll().size());
-
+        Log.d("INSERTED", "sentTos : " + sentTos.length);
     }
 
     private <T> void forEach(List<T> list, Apply<T> block) {
@@ -187,4 +254,7 @@ public class NewsModel {
         }
     }
 
+    public PublishSubject<List<NewsVO>> getNewsFromNetwork() {
+       return mSubject;
+    }
 }

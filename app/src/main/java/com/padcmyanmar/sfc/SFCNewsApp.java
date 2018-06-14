@@ -24,7 +24,6 @@ public class SFCNewsApp extends Application {
         super.onCreate();
         appContext = this;
         NewsModel.getInstance().startLoadingMMNews();
-
     }
 
 }

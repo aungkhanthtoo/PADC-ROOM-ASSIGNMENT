@@ -2,8 +2,10 @@ package com.padcmyanmar.sfc.utils;
 
 import android.arch.lifecycle.Lifecycle;
 import android.arch.lifecycle.LifecycleObserver;
+import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.OnLifecycleEvent;
 import android.os.AsyncTask;
+
 import java.util.List;
 
 public class RoomQuery<T> implements LifecycleObserver {
@@ -17,7 +19,7 @@ public class RoomQuery<T> implements LifecycleObserver {
     private String mID;
 
     public RoomQuery(QueryMapper<T> mQuery) {
-        this.mQuery = mQuery;
+        this(mQuery, "");
     }
 
     public RoomQuery(QueryMapper<T> mQuery, String id) {
@@ -62,7 +64,7 @@ public class RoomQuery<T> implements LifecycleObserver {
 
         @Override
         protected List<E> doInBackground(Void... voids) {
-           return mapper.query(mId);
+            return mapper.query(mId);
         }
 
         @Override

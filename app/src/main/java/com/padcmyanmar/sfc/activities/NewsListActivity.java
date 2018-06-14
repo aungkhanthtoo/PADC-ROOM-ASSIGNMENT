@@ -35,6 +35,9 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.subjects.PublishSubject;
 
 public class NewsListActivity extends BaseActivity
         implements NewsItemDelegate {
@@ -99,10 +102,34 @@ public class NewsListActivity extends BaseActivity
 
         rvNews.addOnScrollListener(mSmartScrollListener);
 
-        getLifecycle().addObserver(
-                NewsModel.getInstance()
-                        .newsFromRoom()
-                        .observe(this::onNewsFromDb));
+//        getLifecycle().addObserver(
+//                NewsModel.getInstance()
+//                        .newsFromRoom()
+//                        .observe(this::onNewsFromDb));
+
+        PublishSubject<List<NewsVO>> mPublishSubject = NewsModel.getInstance().getNewsFromNetwork();
+        mPublishSubject.subscribe(new Observer<List<NewsVO>>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(List<NewsVO> newsVOS) {
+                mNewsAdapter.appendNewData(newsVOS);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Log.e("NewsListActivity", "onError: "+ e.getMessage() );
+            }
+
+            @Override
+            public void onComplete() {
+                Log.d("NewsListActivity", "onComplete: ");
+            }
+        });
+        
 
     }
 

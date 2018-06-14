@@ -81,6 +81,9 @@ public class FavoriteActionVO {
     }
 
     public String getUserId() {
+        if (actedUser != null) {
+            userId = actedUser.getUserId();
+        }
         return userId;
     }
 

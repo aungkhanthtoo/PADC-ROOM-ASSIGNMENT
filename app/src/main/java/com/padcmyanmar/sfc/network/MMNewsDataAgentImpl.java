@@ -21,7 +21,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * Created by aung on 12/3/17.
  */
 
-public class MMNewsDataAgentImpl implements MMNewsDataAgent {
+public class MMNewsDataAgentImpl  { // implements MMNewsAPI
 
     private static MMNewsDataAgentImpl objInstance;
 
@@ -51,6 +51,7 @@ public class MMNewsDataAgentImpl implements MMNewsDataAgent {
         return objInstance;
     }
 
+    /*
     @Override
     public void loadMMNews(String accessToken, int pageNo) {
         Call<GetNewsResponse> loadMMNewsCall = theAPI.loadMMNews(pageNo, accessToken);
@@ -79,4 +80,5 @@ public class MMNewsDataAgentImpl implements MMNewsDataAgent {
             }
         });
     }
+    */
 }

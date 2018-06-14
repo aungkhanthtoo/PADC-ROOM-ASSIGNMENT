@@ -35,16 +35,28 @@ dependencies {
     implementation 'com.jakewharton:butterknife:8.8.1'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
     implementation 'org.greenrobot:eventbus:3.1.1'
-    implementation 'com.google.code.gson:gson:2.8.2'
-    implementation 'com.squareup.retrofit2:retrofit:2.3.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
+    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'com.squareup.retrofit2:retrofit:2.4.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
+    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.4.0'
+
     implementation 'org.mmtextview:mmtextview:1.9'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+
     def lifecycle_version = "1.1.0"
     implementation "android.arch.persistence.room:runtime:$lifecycle_version"
     annotationProcessor "android.arch.persistence.room:compiler:$lifecycle_version"
+
     // alternatively - just LiveData
-    implementation "android.arch.lifecycle:livedata:$lifecycle_version"
+    implementation 'android.arch.lifecycle:livedata:1.1.1'
+
+    // RxJava nad RxAndroid
+    implementation group: 'io.reactivex.rxjava2', name: 'rxjava', version: '2.1.14'
+    implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
+    implementation 'com.jakewharton.rxbinding2:rxbinding:2.1.1'
+    implementation 'com.jakewharton.rxbinding2:rxbinding-support-v4:2.1.1'
+    implementation 'com.jakewharton.rxbinding2:rxbinding-appcompat-v7:2.1.1'
+    implementation 'com.jakewharton.rxbinding2:rxbinding-design:2.1.1'
 }
 repositories {
     mavenCentral()

@@ -29,4 +29,5 @@
     <string name="hint_enter_email">Your Email</string>
     <string name="hint_enter_password">Password</string>
     <string name="lbl_mark_my_home_on_google_map"><u><i>Mark my home on Google Map</i></u></string>
+    <string name="prime_numbers_hint">How many prime numbers?</string>
 </resources>

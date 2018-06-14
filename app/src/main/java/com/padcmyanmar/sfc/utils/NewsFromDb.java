@@ -22,12 +22,6 @@ public class NewsFromDb extends AsyncTask<Void, Void, List<NewsVO>> implements L
 
     private boolean hasFetched;
 
-    private AppDatabase mDb;
-
-    public NewsFromDb(AppDatabase database) {
-        mDb = database;
-    }
-
     @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
     void onCreate() {
         if (mObserver != null) {

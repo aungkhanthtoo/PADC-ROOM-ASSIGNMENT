@@ -92,6 +92,9 @@ public class CommentActionVO {
     }
 
     public String getUserId() {
+        if (actedUser != null) {
+            userId = actedUser.getUserId();
+        }
         return userId;
     }
 
@@ -106,6 +109,5 @@ public class CommentActionVO {
     public void setActedUser(ActedUserVO actedUser) {
         this.actedUser = actedUser;
     }
-
 
 }

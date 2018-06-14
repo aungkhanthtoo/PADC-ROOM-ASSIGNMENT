@@ -95,10 +95,16 @@ public class SentToVO {
     }
 
     public void setSenderId(String senderId) {
+        if (sender != null) {
+            senderId = sender.getUserId();
+        }
         this.senderId = senderId;
     }
 
     public String getReceiverId() {
+        if (receiver != null) {
+            receiverId = receiver.getUserId();
+        }
         return receiverId;
     }
 
@@ -132,4 +138,5 @@ public class SentToVO {
                 ", receiverId='" + receiverId + '\'' +
                 '}';
     }
+
 }

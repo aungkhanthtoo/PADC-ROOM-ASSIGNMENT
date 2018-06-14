@@ -21,8 +21,7 @@ import butterknife.ButterKnife;
  * Created by aung on 11/26/17.
  */
 
-public class LoginRegisterActivity extends BaseActivity
-        implements LoginRegisterDelegate {
+public class LoginRegisterActivity extends BaseActivity implements LoginRegisterDelegate {
 
     @BindView(R.id.toolbar)
     Toolbar toolbar;
